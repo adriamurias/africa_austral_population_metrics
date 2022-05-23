@@ -134,6 +134,11 @@ write.csv(world_pop_mod, "data/world_pop_mod.csv", row.names=FALSE)
 write.csv(sa_pop_mod, "data/sa_pop_mod.csv", row.names=FALSE)
 write.csv(sa_pop_mod_95, "data/sa_pop_mod_95.csv", row.names=FALSE)
 
+write.csv(sa_pop_mod %>% 
+            filter(`Country Name` == 'Mozambique') %>% 
+            select(-`Country Name`),
+          "data/moz_pop_mod.csv", row.names=FALSE)
+
 # Births per Woman
 world_fertility_mod <- world_fertility %>% 
   select(-`2021`,-`...67`) %>% 
