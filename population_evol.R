@@ -230,5 +230,5 @@ plot_moz_births <- moz_pop_births_w %>%
   ggplot(aes(x=year, y=births)) +
   geom_line()
 
-ggsave("figures/moz_pop_births.png",
+ggsave("figures/plot_moz_births.png",
        plot_moz_births, width = 8, height = 4)
