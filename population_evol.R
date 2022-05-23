@@ -13,7 +13,7 @@ world_pop <- read_csv('data/API_SP.POP.TOTL_DS2_en_csv_v2_4019998.csv',
                       col_select = c(
                         -`Country Code`,-`Indicator Name`,-`Indicator Code`))
 
-# World Population per Country
+# World Women Population per Country
 world_w_pop <- read_csv('data/API_SP.POP.TOTL.FE.IN_DS2_en_csv_v2_4030181.csv',
                       skip = 3,
                       col_select = c(
@@ -25,6 +25,13 @@ world_births <- read_csv('data/API_SP.DYN.CBRT.IN_DS2_en_csv_v2_4030067.csv',
                          col_select = c(
                            -`Country Code`,-`Indicator Name`,-`Indicator Code`))
 
+# Fertility Rate (births per woman) per Country
+world_fertility <- read_csv('data/API_SP.DYN.TFRT.IN_DS2_EN_csv_v2_4023233.csv',
+                         skip = 3,
+                         col_select = c(
+                           -`Country Code`,-`Indicator Name`,-`Indicator Code`))
+
+# Death Rates per Country
 world_deaths <- read_csv('data/API_SP.DYN.CDRT.IN_DS2_en_csv_v2_4030068.csv',
                          skip = 3,
                          col_select = c(
@@ -42,7 +49,27 @@ modify_pop_df <- function(data.frame, threshold, opti){
     pivot_longer(cols = -c(`Country Name`),
                  names_to = 'year',
                  values_to = 'population') %>% 
-    mutate(year = as.double(year))
+    mutate(year = as.double(year)) %>% 
+    
+    left_join(world_births %>%
+                select(-`2021`,-`...67`) %>% 
+                pivot_longer(cols = -c(`Country Name`),
+                             names_to = 'year',
+                             values_to = 'births_1k') %>% 
+                mutate(year = as.double(year)),
+              by = c('Country Name','year')) %>% 
+    mutate(births = round(population * (births_1k/1000)),
+           birth_rate = births_1k/1000) %>% 
+    
+    left_join(world_deaths %>%
+                select(-`2021`,-`...67`) %>% 
+                pivot_longer(cols = -c(`Country Name`),
+                             names_to = 'year',
+                             values_to = 'deaths_1k') %>% 
+                mutate(year = as.double(year)),
+              by = c('Country Name','year')) %>% 
+    mutate(deaths = round(population * (deaths_1k/1000)),
+           death_rate = deaths_1k/1000)
   
   b <-
     if(missing(threshold)) {
@@ -99,118 +126,44 @@ modify_pop_df <- function(data.frame, threshold, opti){
 }
 
 # Tibbles of World and Southern African Countries
-world_pop_mod <- modify_pop_df(world_pop) %>% 
-  left_join(modify_pop_df(world_w_pop) %>% 
-              mutate(w_pop = population) %>% 
-              select(`Country Name`, year, w_pop),
-            by = c("Country Name", "year")) %>% 
-  mutate(w_prop = w_pop/population)
+world_pop_mod <- modify_pop_df(world_pop)
 sa_pop_mod <- modify_pop_df(world_pop, 1, sa)
-sa_w_pop_mod <- modify_pop_df(world_w_pop, 1, sa)
 sa_pop_mod_95 <- modify_pop_df(world_pop, 1995, sa)
-sa_w_pop_mod_95 <- modify_pop_df(world_w_pop, 1995, sa)
 
-moz_pop_mod_95 <- sa_pop_mod_95 %>% 
-  filter(`Country Name` == 'Mozambique') %>% 
-  select(year, population)
-write.csv(moz_pop_mod_95, "data/moz_pop_mod_95.csv", row.names=FALSE)
+write.csv(world_pop_mod, "data/world_pop_mod.csv", row.names=FALSE)
+write.csv(sa_pop_mod, "data/sa_pop_mod.csv", row.names=FALSE)
+write.csv(sa_pop_mod_95, "data/sa_pop_mod_95.csv", row.names=FALSE)
 
-moz_w_pop_mod_95 <- world_pop_mod %>% 
-  filter(`Country Name` == 'Mozambique',
-         year >= 1995) %>% 
-  select(year, population, w_pop)
-write.csv(moz_w_pop_mod_95, "data/moz_w_pop_mod_95.csv", row.names=FALSE)
-
-# row.names(sa_pop) <- sa_pop %>% pull(`Country Name`)
-# 
-# sa_pop_transp <- t(sa_pop)[-1,] %>% data.frame()
-
-# Birth Rate
-world_births_mod <- world_births %>% 
+# Births per Woman
+world_fertility_mod <- world_fertility %>% 
   select(-`2021`,-`...67`) %>% 
   pivot_longer(cols = -c(`Country Name`),
                names_to = 'year',
-               values_to = 'births_1k') %>% 
+               values_to = 'fertility_rate') %>% 
   mutate(year = as.double(year))
 
-sa_births_mod <-
-  world_births_mod[world_births_mod$`Country Name` == 'Mozambique' |
-                     world_births_mod$`Country Name` == 'South Africa' |
-                     world_births_mod$`Country Name` == 'Botswana' |
-                     world_births_mod$`Country Name` == 'Namibia' |
-                     world_births_mod$`Country Name` == 'Angola' |
-                     world_births_mod$`Country Name` == 'Zimbabwe' |
-                     world_births_mod$`Country Name` == 'Eswatini' |
-                     world_births_mod$`Country Name` == 'Zambia' |
-                     world_births_mod$`Country Name` == 'Malawi' |
-                     world_births_mod$`Country Name` == 'Lesotho',]
+sa_fertility_mod <-
+  world_fertility_mod[world_fertility_mod$`Country Name` == 'Mozambique' |
+                        world_fertility_mod$`Country Name` == 'South Africa' |
+                        world_fertility_mod$`Country Name` == 'Botswana' |
+                        world_fertility_mod$`Country Name` == 'Namibia' |
+                        world_fertility_mod$`Country Name` == 'Angola' |
+                        world_fertility_mod$`Country Name` == 'Zimbabwe' |
+                        world_fertility_mod$`Country Name` == 'Eswatini' |
+                        world_fertility_mod$`Country Name` == 'Zambia' |
+                        world_fertility_mod$`Country Name` == 'Malawi' |
+                        world_fertility_mod$`Country Name` == 'Lesotho',]
 
-moz_births_mod_95 <- world_births_mod %>% 
+sa_fertility_mod_95 <- sa_fertility_mod %>% 
+  filter(year >= 1995)
+
+moz_fertility_mod_95 <- world_fertility_mod %>% 
   filter(`Country Name` == 'Mozambique',
          year >= 1995) %>% 
-  select(year, births_1k)
-write.csv(moz_births_mod_95, "data/moz_births_mod_95.csv", row.names=FALSE)
+  select(year, fertility_rate)
 
-# Death Rate
-world_deaths_mod <- world_deaths %>% 
-  select(-`2021`,-`...67`) %>% 
-  pivot_longer(cols = -c(`Country Name`),
-               names_to = 'year',
-               values_to = 'deaths_1k') %>% 
-  mutate(year = as.double(year))
-
-sa_deaths_mod <-
-  world_deaths_mod[world_deaths_mod$`Country Name` == 'Mozambique' |
-                     world_deaths_mod$`Country Name` == 'South Africa' |
-                     world_deaths_mod$`Country Name` == 'Botswana' |
-                     world_deaths_mod$`Country Name` == 'Namibia' |
-                     world_deaths_mod$`Country Name` == 'Angola' |
-                     world_deaths_mod$`Country Name` == 'Zimbabwe' |
-                     world_deaths_mod$`Country Name` == 'Eswatini' |
-                     world_deaths_mod$`Country Name` == 'Zambia' |
-                     world_deaths_mod$`Country Name` == 'Malawi' |
-                     world_deaths_mod$`Country Name` == 'Lesotho',]
-
-moz_deaths_mod_95 <- world_deaths_mod %>% 
-  filter(`Country Name` == 'Mozambique',
-         year >= 1995) %>% 
-  select(year, deaths_1k)
-write.csv(moz_deaths_mod_95, "data/moz_deaths_mod_95.csv", row.names=FALSE)
-
-# World
-world_pop_births_deaths <- world_pop_mod %>% 
-  left_join(world_births_mod,
-            by = c('Country Name','year')) %>% 
-  mutate(births = round(population * (births_1k/1000)),
-         birth_rate = births_1k/1000) %>% 
-  left_join(world_deaths_mod,
-            by = c('Country Name','year')) %>% 
-  mutate(deaths = round(population * (deaths_1k/1000)),
-         death_rate = deaths_1k/1000)
-
-write.csv(world_pop_births_deaths, "data/world_pop_births_deaths.csv", row.names=FALSE)
-
-# SSA
-sa_pop_births_deaths <-
-  world_pop_births_deaths[
-    world_pop_births_deaths$`Country Name` == 'Mozambique' |
-      world_pop_births_deaths$`Country Name` == 'South Africa' |
-      world_pop_births_deaths$`Country Name` == 'Botswana' |
-      world_pop_births_deaths$`Country Name` == 'Namibia' |
-      world_pop_births_deaths$`Country Name` == 'Angola' |
-      world_pop_births_deaths$`Country Name` == 'Zimbabwe' |
-      world_pop_births_deaths$`Country Name` == 'Eswatini' |
-      world_pop_births_deaths$`Country Name` == 'Zambia' |
-      world_pop_births_deaths$`Country Name` == 'Malawi' |
-      world_pop_births_deaths$`Country Name` == 'Lesotho',]
-
-write.csv(sa_pop_births_deaths, "data/sa_pop_births_deaths.csv", row.names=FALSE)
-
-# Moz
-moz_pop_births_deaths <- world_pop_births_deaths %>% 
-  filter(`Country Name` == 'Mozambique')
-
-write.csv(moz_pop_births_deaths, "data/moz_pop_births_deaths.csv", row.names=FALSE)
+write.csv(moz_fertility_mod_95,
+          "data/moz_fertility_mod_95.csv", row.names=FALSE)
 
 #------------------------------------------------------------------------------
 # Plot
@@ -236,93 +189,96 @@ plot_sa_pop_growth <- sa_pop_mod %>%
   ggplot(aes(x=year, y=pop_growth, color = `Country Name`)) +
   geom_line()
 
-ggsave("figures/plot_sa_pop_growth.png",
-       plot_sa_pop_growth, width = 8, height = 4)
+plot_sa_fertility_rate <- sa_fertility_mod %>% 
+  ggplot(aes(x=year, y=fertility_rate, color = `Country Name`)) +
+  geom_line() +
+  ylab("Fertility Rate (births per woman)")
 
-# Anual birth evolution of 10 SSA countries
-plot_sa_births <- sa_births_mod %>% 
+ggsave("figures/plot_sa_fertility_rate.png",
+       plot_sa_fertility_rate, width = 8, height = 4)
+
+plot_sa_births_1k <- sa_pop_mod %>% 
   ggplot(aes(x=year, y=births_1k, color = `Country Name`)) +
   geom_line() +
   ylab("Birth rate, crude (per 1,000 people)")
 
-ggsave("figures/plot_sa_births.png",
-       plot_sa_births, width = 8, height = 4)
+ggsave("figures/plot_sa_births_1k.png",
+       plot_sa_births_1k, width = 8, height = 4)
+
+plot_sa_deaths_1k <- sa_pop_mod %>% 
+  ggplot(aes(x=year, y=deaths_1k, color = `Country Name`)) +
+  geom_line() +
+  ylab("Death rate, crude (per 1,000 people)")
+
+ggsave("figures/plot_sa_deaths_1k.png",
+       plot_sa_deaths_1k, width = 8, height = 4)
 
 ## SINCE 1995
-# Population evolution of 10 SSA countries
 plot_sa_pop_change_95 <- sa_pop_mod_95 %>% 
   ggplot(aes(x=year, y=pop_change, color = `Country Name`)) +
-  geom_line()
+  geom_line() +
+  ylab("Population/Initial population")
 
 ggsave("figures/plot_sa_pop_change_95.png",
        plot_sa_pop_change_95, width = 8, height = 4)
 
-# Fertility rate (births per woman) evolution of 10 SSA countries
-plot_sa_births_95 <- sa_births_mod %>% 
-  filter(year >= 1995) %>% 
+plot_sa_fertility_rate_95 <- sa_fertility_mod_95 %>% 
+  ggplot(aes(x=year, y=fertility_rate, color = `Country Name`)) +
+  geom_line() +
+  ylab("Fertility Rate (births per woman)")
+
+ggsave("figures/plot_sa_fertility_rate_95.png",
+       plot_sa_fertility_rate_95, width = 8, height = 4)
+
+plot_sa_births_1k_95 <- sa_pop_mod_95 %>% 
   ggplot(aes(x=year, y=births_1k, color = `Country Name`)) +
   geom_line() +
   ylab("Birth rate, crude (per 1,000 people)")
 
-ggsave("figures/plot_sa_births_95.png",
-       plot_sa_births_95, width = 8, height = 4)
+ggsave("figures/plot_sa_births_1k_95.png",
+       plot_sa_births_1k_95, width = 8, height = 4)
 
-# SSA
-plot_sa_births <- sa_pop_births_deaths %>% 
-  ggplot(aes(x=year, y=births_1k, color = `Country Name`)) +
-  geom_line() +
-  ylab("Birth rate, crude (per 1,000 people)")
-
-ggsave("figures/plot_sa_births.png",
-       plot_sa_births, width = 8, height = 4)
-
-plot_sa_deaths <- sa_pop_births_deaths %>% 
+plot_sa_deaths_1k_95 <- sa_pop_mod_95 %>% 
   ggplot(aes(x=year, y=deaths_1k, color = `Country Name`)) +
   geom_line() +
   ylab("Death rate, crude (per 1,000 people)")
 
-ggsave("figures/plot_sa_deaths.png",
-       plot_sa_deaths, width = 8, height = 4)
-
-plot_sa_births <- sa_pop_births_deaths %>% 
-  ggplot(aes(x=year, y=births_1k, color = `Country Name`)) +
-  geom_line() +
-  ylab("Birth rate, crude (per 1,000 people)")
-
-ggsave("figures/plot_sa_births.png",
-       plot_sa_births, width = 8, height = 4)
-
-plot_sa_deaths <- sa_pop_births_deaths %>% 
-  ggplot(aes(x=year, y=deaths_1k, color = `Country Name`)) +
-  geom_line() +
-  ylab("Death rate, crude (per 1,000 people)")
-
-ggsave("figures/plot_sa_deaths.png",
-       plot_sa_deaths, width = 8, height = 4)
+ggsave("figures/plot_sa_deaths_1k_95.png",
+       plot_sa_deaths_1k_95, width = 8, height = 4)
 
 # Mozambique
-plot_moz_pop <- moz_pop_births_deaths %>% 
-  ggplot(aes(x=year, y=population)) +
-  geom_line()
+plot_moz_pop_change_95 <- sa_pop_mod_95 %>% 
+  filter(`Country Name` == 'Mozambique') %>% 
+  ggplot(aes(x=year, y=pop_change, color = `Country Name`)) +
+  geom_line() +
+  ylab("Population/Initial population")
 
-ggsave("figures/plot_moz_pop.png",
-       plot_moz_pop, width = 8, height = 4)
+ggsave("figures/plot_moz_pop_change_95.png",
+       plot_moz_pop_change_95, width = 8, height = 4)
 
-plot_moz_births_w <- moz_pop_births_deaths %>% 
-  ggplot(aes(x=year, y=births_1k)) +
-  geom_line()
+plot_moz_fertility_rate_95 <- sa_fertility_mod_95 %>% 
+  filter(`Country Name` == 'Mozambique') %>% 
+  ggplot(aes(x=year, y=fertility_rate, color = `Country Name`)) +
+  geom_line() +
+  ylab("Fertility Rate (births per woman)")
 
-ggsave("figures/plot_moz_births_w.png",
-       plot_moz_births_w, width = 8, height = 4)
+ggsave("figures/plot_moz_fertility_rate_95.png",
+       plot_moz_fertility_rate_95, width = 8, height = 4)
 
-plot_moz_births <- moz_pop_births_deaths %>% 
-  ggplot(aes(x=year, y=births)) +
-  geom_line()
+plot_moz_births_1k_95 <- sa_pop_mod_95 %>% 
+  filter(`Country Name` == 'Mozambique') %>% 
+  ggplot(aes(x=year, y=births_1k, color = `Country Name`)) +
+  geom_line() +
+  ylab("Birth rate, crude (per 1,000 people)")
 
-ggsave("figures/plot_moz_births.png",
-       plot_moz_births, width = 8, height = 4)
+ggsave("figures/plot_moz_births_1k_95.png",
+       plot_moz_births_1k_95, width = 8, height = 4)
 
-plot_moz_births <- moz_pop_births_deaths %>% 
-  filter(year >=1995) %>% 
-  ggplot(aes(x=year, y=birth_rate)) +
-  geom_line()
+plot_moz_deaths_1k_95 <- sa_pop_mod_95 %>% 
+  filter(`Country Name` == 'Mozambique') %>% 
+  ggplot(aes(x=year, y=deaths_1k, color = `Country Name`)) +
+  geom_line() +
+  ylab("Death rate, crude (per 1,000 people)")
+
+ggsave("figures/plot_moz_deaths_1k_95.png",
+       plot_moz_deaths_1k_95, width = 8, height = 4)
