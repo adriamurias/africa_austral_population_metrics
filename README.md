@@ -14,7 +14,7 @@ Some population metrics figures for Southern African countries (Angola, Botswana
 
 ![alt text for screen readers](/figures/plot_sa_pop_change_95.png "Population growth per people living in 1960")
 
-![alt text for screen readers](/figuresplot_sa_fertility_rate_95.png "Fertility rate evolution (births per woman)")
+![alt text for screen readers](/figures/plot_sa_fertility_rate_95.png "Fertility rate evolution (births per woman)")
 
 ![alt text for screen readers](/figures/plot_sa_births_1k_95.png "Birth rate, crude (per 1,000 people)")
 
@@ -24,7 +24,7 @@ Some population metrics figures for Southern African countries (Angola, Botswana
 
 ![alt text for screen readers](/figures/plot_moz_pop_change_95.png "Population growth per people living in 1960")
 
-![alt text for screen readers](/figuresplot_moz_fertility_rate_95.png "Fertility rate evolution (births per woman)")
+![alt text for screen readers](/figures/plot_moz_fertility_rate_95.png "Fertility rate evolution (births per woman)")
 
 ![alt text for screen readers](/figures/plot_moz_births_1k_95.png "Birth rate, crude (per 1,000 people)")
 
