@@ -20,7 +20,7 @@ Population metrics for some Southern African countries (Angola, Botswana, Eswati
 
 ![alt text for screen readers](/figures/plot_sa_deaths_1k_95.png "Death rate, crude (per 1,000 people)")
 
-## Plots for Mozambique
+## Mozambique
 
 ![alt text for screen readers](/figures/plot_moz_pop_change_95.png "Population growth per people living in 1960")
 
