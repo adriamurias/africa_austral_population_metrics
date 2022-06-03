@@ -130,6 +130,8 @@ world_pop_mod <- modify_pop_df(world_pop)
 sa_pop_mod <- modify_pop_df(world_pop, 1, sa)
 sa_pop_mod_95 <- modify_pop_df(world_pop, 1995, sa)
 
+saveRDS(sa_pop_mod, file = "data/sa_pop_mod.rds")
+
 write.csv(world_pop_mod, "data/world_pop_mod.csv", row.names=FALSE)
 write.csv(sa_pop_mod, "data/sa_pop_mod.csv", row.names=FALSE)
 write.csv(sa_pop_mod_95, "data/sa_pop_mod_95.csv", row.names=FALSE)
